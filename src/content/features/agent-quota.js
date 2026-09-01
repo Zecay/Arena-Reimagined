@@ -19,6 +19,7 @@ window.__AEXT_FEATURES__['agent-quota'] = {
     let day = '';
     let badge = null;
     let lastBump = 0;
+    let booted = false;
 
     const live = () => !window.AextRuntime || AextRuntime.isEnabled('agent-quota');
 
@@ -64,24 +65,28 @@ window.__AEXT_FEATURES__['agent-quota'] = {
         const today = todayKey();
         if (v.day === today) {
           day = v.day;
-          count = v.count || 0;
+          count = parseInt(v.count, 10) || 0;
         } else {
           day = today;
           count = 0;
+          /* New local day only — never wipe today's stored count. */
           await chrome.storage.local.set({ [STORE]: { day: day, count: 0 } });
         }
       } catch (e) {
         day = todayKey();
         count = 0;
       }
+      booted = true;
     }
 
     async function save() {
+      if (!booted) return;
       try { await chrome.storage.local.set({ [STORE]: { day: day, count: count } }); } catch (e) { /* ignore */ }
     }
 
     async function bump() {
       if (!live() || !isAgentView()) return;
+      if (!booted) await load();
       const now = Date.now();
       if (now - lastBump < 1500) return;
       lastBump = now;
@@ -102,12 +107,13 @@ window.__AEXT_FEATURES__['agent-quota'] = {
     }
 
     function paint() {
+      if (!booted) return;
       if (!live() || !isAgentView()) {
         if (badge && badge.remove) badge.remove();
         return;
       }
       const today = todayKey();
-      if (day !== today) { day = today; count = 0; save(); }
+      if (day && day !== today) { day = today; count = 0; save(); }
       ensureBadge();
       badge.textContent = count + '/' + limitOf();
       badge.title = 'Agent sends today (local count, resets at midnight). Arena’s daily Agent Mode cap is about ' + limitOf() + ' — this is not the server remaining quota.';
@@ -159,23 +165,34 @@ window.__AEXT_FEATURES__['agent-quota'] = {
     }, true);
 
     let wasRunning = false;
+    let runSeen = false;
     function watchRun() {
-      if (!live()) { wasRunning = false; return; }
+      if (!booted || !live()) { wasRunning = false; runSeen = false; return; }
       const running = isRunning();
+      if (!runSeen) {
+        runSeen = true;
+        wasRunning = running;
+        return;
+      }
       if (running && !wasRunning) bump();
       wasRunning = running;
     }
-
-    load().then(paint);
 
     const start = () => {
       if (!document.body) return;
       paint();
       AextDom.observeSparse(() => { paint(); watchRun(); }, 400);
     };
-    if (document.body) start();
-    else document.addEventListener('DOMContentLoaded', start, { once: true });
-    setInterval(() => { if (live()) { const t = todayKey(); if (t !== day) { day = t; count = 0; save(); } paint(); } }, 30000);
+    load().then(() => {
+      if (document.body) start();
+      else document.addEventListener('DOMContentLoaded', start, { once: true });
+    });
+    setInterval(() => {
+      if (!booted || !live()) return;
+      const t = todayKey();
+      if (day && t !== day) { day = t; count = 0; save(); }
+      paint();
+    }, 30000);
 
     this.setEnabled = (on) => { if (on) paint(); else if (badge && badge.remove) badge.remove(); };
     ctx.log('ready');
