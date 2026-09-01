@@ -269,6 +269,7 @@ const AextSettings = {
   _merge(base, patch) {
     const out = Object.assign({}, base);
     for (const k of Object.keys(patch || {})) {
+      if (k === '__proto__' || k === 'constructor' || k === 'prototype') continue;
       const v = patch[k];
       if (
         v && typeof v === 'object' && !Array.isArray(v) &&

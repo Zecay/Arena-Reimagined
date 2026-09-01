@@ -13,7 +13,7 @@ async function renderThemeGrid(activeId) {
 
     const swatch = document.createElement('span');
     swatch.className = 'swatch';
-    swatch.style.background = t.swatch;
+    swatch.style.background = (AextThemeIO.safeSwatch ? AextThemeIO.safeSwatch(t.swatch) : t.swatch);
 
     const info = document.createElement('span');
     info.className = 't-info';
@@ -114,10 +114,24 @@ function renderScanDemo() {
   });
   const fails = rows.filter((r) => r.ratio < 4.5);
   const out = $('scan-out');
-  out.innerHTML = '<p class="muted">This page (ArenaKit options): ' +
-    (rows.length - fails.length) + '/' + rows.length + ' sampled text nodes meet 4.5:1. ' +
-    (fails.length ? fails.map((f) => '<code>' + f.el + ' (' + f.ratio.toFixed(2) + ')</code>').join(', ') : 'PASS') +
-    '</p>';
+  out.textContent = '';
+  const p = document.createElement('p');
+  p.className = 'muted';
+  p.appendChild(document.createTextNode(
+    'This page (ArenaKit options): ' + (rows.length - fails.length) + '/' + rows.length +
+    ' sampled text nodes meet 4.5:1. '
+  ));
+  if (!fails.length) {
+    p.appendChild(document.createTextNode('PASS'));
+  } else {
+    fails.forEach((f, i) => {
+      const code = document.createElement('code');
+      code.textContent = f.el + ' (' + f.ratio.toFixed(2) + ')';
+      p.appendChild(code);
+      if (i < fails.length - 1) p.appendChild(document.createTextNode(', '));
+    });
+  }
+  out.appendChild(p);
 }
 
 async function renderHealth() {

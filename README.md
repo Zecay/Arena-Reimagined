@@ -23,7 +23,7 @@ Switch from the gear → **Theme**. Built-ins:
 - **Hyper Contrast** / **Solar Grid**
 - **Claude** — full reskin (warm Cowork dark, serif headlines, terracotta send). Homage only, not Anthropic.
 
-Import / export JSON from the Theme tab. **Theme docs** copies the spec so an AI can write you one.
+Import / export JSON from the Theme tab. **Theme docs** copies the spec so an AI can write you one. Only import JSON you trust — a theme restyles arena.ai in this browser.
 
 ## Features
 
@@ -56,6 +56,7 @@ Want something that isn’t here? Contact **zecayy** on Discord.
 - Settings stay in Chrome storage on your machine.
 - **Host unsupported files** is the only feature that uploads (Litterbox / Catbox), and only after the warning + Accept.
 - Some themes load fonts from Google Fonts.
+- Imported theme JSON is untrusted input. Only import files you wrote or trust.
 
 ## License
 

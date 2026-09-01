@@ -491,7 +491,8 @@ window.__AEXT_FEATURES__['settings-panel'] = {
           const card = document.createElement('button');
           card.type = 'button';
           card.className = 'aext-sp-theme' + (t.id === activeId ? ' is-active' : '');
-          const sw = document.createElement('span'); sw.className = 'aext-sp-swatch'; sw.style.background = t.swatch;
+          const sw = document.createElement('span'); sw.className = 'aext-sp-swatch';
+          sw.style.background = (AextThemeIO.safeSwatch ? AextThemeIO.safeSwatch(t.swatch) : t.swatch);
           const name = document.createElement('span'); name.className = 'aext-sp-name'; name.textContent = t.label;
           const check = document.createElement('span'); check.className = 'aext-sp-check'; check.textContent = t.id === activeId ? '\u2713' : '';
           card.appendChild(sw); card.appendChild(name); card.appendChild(check);
@@ -527,7 +528,7 @@ window.__AEXT_FEATURES__['settings-panel'] = {
 
       const hint = document.createElement('p');
       hint.className = 'aext-sp-hint';
-      hint.textContent = 'Import a theme, or ask your favourite AI to write one from a prompt.';
+      hint.textContent = 'Import a theme, or ask an AI to write one. Only import JSON you trust — a theme restyles arena.ai in this browser.';
       themeView.appendChild(hint);
 
       /* theme actions: Export current, Import */

@@ -236,11 +236,14 @@ const AextTheme = {
     this._applyReskin(theme);
   },
 
+  /* Reject CSS breakout from imported extras (no ; { } @ \\ url()). */
   _cssVal(s, max) {
-    return String(s || '')
-      .replace(/[<>]|javascript:|expression\(|url\s*\(\s*['"]?\s*javascript/gi, '')
-      .replace(/[\u0000-\u001f]/g, '')
-      .slice(0, max || 400);
+    if (window.AextThemeIO && typeof AextThemeIO.safeCss === 'function') {
+      return AextThemeIO.safeCss(s, max);
+    }
+    const t = String(s || '').replace(/[\u0000-\u001f\u007f]/g, '').slice(0, max || 400);
+    if (/[;{}@\\<>]|javascript:|expression\s*\(|url\s*\(/i.test(t)) return '';
+    return t;
   },
 
   _applyExtras(theme) {
@@ -325,8 +328,11 @@ const AextTheme = {
       sizes.push('auto');
     }
     if (x.backgroundImage) {
-      layers.push(this._cssVal(x.backgroundImage, 500));
-      sizes.push('auto');
+      const bg = this._cssVal(x.backgroundImage, 500);
+      if (bg && /^(linear|radial|conic|repeating-linear|repeating-radial)-gradient\(/i.test(bg)) {
+        layers.push(bg);
+        sizes.push('auto');
+      }
     }
     if (layers.length) {
       const shells = [

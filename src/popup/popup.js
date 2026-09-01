@@ -14,7 +14,7 @@ async function renderThemeGrid(activeId) {
 
     const swatch = document.createElement('span');
     swatch.className = 'swatch';
-    swatch.style.background = t.swatch;
+    swatch.style.background = (AextThemeIO.safeSwatch ? AextThemeIO.safeSwatch(t.swatch) : t.swatch);
 
     const label = document.createElement('span');
     label.className = 't-label';

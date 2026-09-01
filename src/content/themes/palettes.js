@@ -443,6 +443,29 @@ const AextThemeIO = {
     catch (e) { return 'light'; }
   },
 
+  /* Single CSS value — no declaration breakout, no url(), no @import. */
+  safeCss(s, max) {
+    const t = String(s == null ? '' : s)
+      .replace(/[\u0000-\u001f\u007f]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, max || 400);
+    if (!t) return '';
+    if (/[;{}@\\<>]|javascript:|expression\s*\(|url\s*\(/i.test(t)) return '';
+    return t;
+  },
+
+  safeSwatch(s) {
+    const fallback = 'linear-gradient(135deg,#3b82f6,#8b5cf6)';
+    const t = this.safeCss(s, 180);
+    if (!t) return fallback;
+    if (/^#([0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(t)) return t;
+    if (/^(transparent|currentcolor)$/i.test(t)) return t;
+    if (/^(rgb|rgba|hsl|hsla|hwb)\(/i.test(t)) return t;
+    if (/^(linear|radial|conic|repeating-linear|repeating-radial)-gradient\(/i.test(t)) return t;
+    return fallback;
+  },
+
   /* Parse & validate a theme from a JSON string OR object. Throws on error. */
   parse(input) {
     let o = input;
@@ -450,15 +473,45 @@ const AextThemeIO = {
       const trimmed = input.trim().replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '');
       try { o = JSON.parse(trimmed); } catch (e) { throw new Error('Invalid JSON — could not parse the theme file.'); }
     }
-    if (!o || typeof o !== 'object') throw new Error('Not a theme object.');
-    const tokens = (o.tokens && typeof o.tokens === 'object') ? o.tokens : null;
-    if (!tokens) throw new Error("A theme needs a 'tokens' object (CSS custom-property values).");
+    if (!o || typeof o !== 'object' || Array.isArray(o)) throw new Error('Not a theme object.');
+    const rawTokens = (o.tokens && typeof o.tokens === 'object' && !Array.isArray(o.tokens)) ? o.tokens : null;
+    if (!rawTokens) throw new Error("A theme needs a 'tokens' object (CSS custom-property values).");
+    const tokens = {};
+    for (const k of Object.keys(rawTokens)) {
+      if (k === '__proto__' || k === 'constructor' || k === 'prototype') continue;
+      if (!/^[a-z][a-z0-9-]{0,63}$/i.test(k)) continue;
+      const val = this.safeCss(rawTokens[k], 80);
+      if (val) tokens[k] = val;
+    }
+    if (!Object.keys(tokens).length) throw new Error("A theme needs a 'tokens' object (CSS custom-property values).");
     const mode = o.mode === 'light' ? 'light' : 'dark';
     const name = String(o.name || o.label || 'Custom theme').trim().slice(0, 60) || 'Custom theme';
     const baseId = String(o.id || name).replace(/[^a-z0-9-]/gi, '-').replace(/^-+|-+$/g, '').toLowerCase().slice(0, 40) || 'theme';
-    const swatch = (typeof o.swatch === 'string' && o.swatch) ? o.swatch : 'linear-gradient(135deg,#3b82f6,#8b5cf6)';
+    const swatch = this.safeSwatch(typeof o.swatch === 'string' ? o.swatch : '');
     const tagline = String(o.tagline || 'Imported custom theme').slice(0, 120) || 'Imported custom theme';
-    const extras = (o.extras && typeof o.extras === 'object' && !Array.isArray(o.extras)) ? o.extras : {};
+    const extrasIn = (o.extras && typeof o.extras === 'object' && !Array.isArray(o.extras)) ? o.extras : {};
+    const extraMax = {
+      radius: 24, font: 180, fontMono: 180,
+      selectionBg: 80, selectionFg: 80,
+      scrollbarWidth: 16, scrollbarThumb: 80, scrollbarTrack: 80,
+      shadow: 160, glow: 160, backgroundImage: 500
+    };
+    const extras = {};
+    for (const k of Object.keys(extraMax)) {
+      if (!Object.prototype.hasOwnProperty.call(extrasIn, k)) continue;
+      const val = this.safeCss(extrasIn[k], extraMax[k]);
+      if (val) extras[k] = val;
+    }
+    if (Object.prototype.hasOwnProperty.call(extrasIn, 'texture')) {
+      const tex = String(extrasIn.texture || 'none').toLowerCase();
+      extras.texture = /^(none|dots|grid|noise)$/.test(tex) ? tex : 'none';
+    }
+    if (Object.prototype.hasOwnProperty.call(extrasIn, 'textureOpacity')) {
+      extras.textureOpacity = Math.max(0, Math.min(0.35, Number(extrasIn.textureOpacity) || 0));
+    }
+    if (typeof extrasIn.fontUrl === 'string' && /^https:\/\/fonts\.(googleapis|gstatic)\.com\//i.test(extrasIn.fontUrl)) {
+      extras.fontUrl = extrasIn.fontUrl.slice(0, 400);
+    }
     const id = baseId.indexOf('custom-') === 0 ? baseId : 'custom-' + baseId;
     return { id, label: name, mode, tagline, swatch, tokens, extras };
   },
