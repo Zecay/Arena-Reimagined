@@ -4,7 +4,7 @@
 
 const AEXT_META = {
   name: 'Arena Reimagined',
-  version: '0.3.23',
+  version: '0.3.24',
   tagline: 'Themes & tools that make arena.ai feel like yours',
   website: 'https://arena.ai'
 };

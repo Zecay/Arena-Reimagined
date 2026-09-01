@@ -40,7 +40,21 @@ window.__AEXT_FEATURES__['agent-quota'] = {
 
     function isAgentView() {
       const p = (location.pathname || '').toLowerCase();
-      return p === '/agent' || p.indexOf('/agent/') === 0;
+      if (p === '/agent' || p.indexOf('/agent/') === 0) return true;
+      if (p.indexOf('/battle') === 0 || p.indexOf('/direct') === 0) return false;
+      return !!(document.querySelector('.editor-content, .ProseMirror, .tiptap'));
+    }
+
+    function isRunning() {
+      if (document.querySelector('[data-testid="stop-button"], button[aria-label="Stop" i], button[aria-label="Stop generating" i], button[aria-label="Stop generation" i]')) return true;
+      const editor = AextDom.findPrompt && AextDom.findPrompt();
+      if (!editor) return false;
+      let n = editor.parentElement;
+      for (let i = 0; i < 8 && n; i++, n = n.parentElement) {
+        const stop = n.querySelector && n.querySelector('[data-testid="stop-button"], button[aria-label="Stop" i], button[aria-label="Stop generating" i]');
+        if (stop) return true;
+      }
+      return false;
     }
 
     async function load() {
@@ -110,10 +124,22 @@ window.__AEXT_FEATURES__['agent-quota'] = {
 
     function looksLikeSend(el) {
       if (!el || el.tagName !== 'BUTTON') return false;
-      if (el.closest('#arenakit-settings-panel, #arenakit-settings-overlay, #arenakit-settings-btn')) return false;
+      if (el.closest('#arenakit-settings-panel, #arenakit-settings-overlay, #arenakit-settings-btn, #aext-ws-search')) return false;
       if (el.classList && el.classList.contains('aext-fu')) return false;
       const al = (el.getAttribute('aria-label') || el.getAttribute('title') || '').toLowerCase();
-      return /^send(\s+message)?$/.test(al) || al === 'send';
+      if (/^send(\s+message)?$/.test(al) || al === 'send') return true;
+      if (/\bstop\b/.test(al) || /add files/.test(al)) return false;
+      if (el.type === 'submit') {
+        const prompt = AextDom.findPrompt && AextDom.findPrompt();
+        if (!prompt) return false;
+        const form = el.closest('form');
+        if (form && form.contains(prompt)) return true;
+        let n = prompt;
+        for (let i = 0; i < 8 && n; i++, n = n.parentElement) {
+          if (n.contains && n.contains(el)) return true;
+        }
+      }
+      return false;
     }
 
     document.addEventListener('click', (e) => {
@@ -122,17 +148,30 @@ window.__AEXT_FEATURES__['agent-quota'] = {
     }, true);
 
     document.addEventListener('keydown', (e) => {
-      if (e.key !== 'Enter' || !(e.ctrlKey || e.metaKey)) return;
-      const editor = AextDom.findPrompt();
-      if (editor && (e.target === editor || (editor.contains && editor.contains(e.target)))) bump();
+      if (e.key !== 'Enter' || e.shiftKey) return;
+      const t = e.target;
+      if (!t) return;
+      if (t.closest && t.closest('#aext-ws-search, #arenakit-settings-panel, #aext-opt-dlg, input, textarea')) return;
+      const editor = AextDom.findPrompt && AextDom.findPrompt();
+      const inEditor = !!(editor && (t === editor || (editor.contains && editor.contains(t)) ||
+        t.isContentEditable || (t.closest && t.closest('[contenteditable], .tiptap, .ProseMirror, .editor-content'))));
+      if (inEditor) bump();
     }, true);
+
+    let wasRunning = false;
+    function watchRun() {
+      if (!live()) { wasRunning = false; return; }
+      const running = isRunning();
+      if (running && !wasRunning) bump();
+      wasRunning = running;
+    }
 
     load().then(paint);
 
     const start = () => {
       if (!document.body) return;
       paint();
-      AextDom.observeSparse(paint, 500);
+      AextDom.observeSparse(() => { paint(); watchRun(); }, 400);
     };
     if (document.body) start();
     else document.addEventListener('DOMContentLoaded', start, { once: true });

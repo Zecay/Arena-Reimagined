@@ -91,7 +91,7 @@ window.__AEXT_FEATURES__['workspace-search'] = {
     /* Workspace column only — never main / the page scroller. */
     function findHost() {
       const btn = firstFolder();
-      if (!btn) return null;
+      if (!btn) return findWorkspaceCard();
       const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0) || 1200;
       let n = btn.parentElement;
       let slim = null;
@@ -114,7 +114,62 @@ window.__AEXT_FEATURES__['workspace-search'] = {
         }
         n = n.parentElement;
       }
-      return overflowCol || slim;
+      if (overflowCol || slim) return overflowCol || slim;
+      return findWorkspaceCard();
+    }
+
+    function findWorkspaceCard() {
+      const skipSel = '#arenakit-settings-panel, #arenakit-settings-overlay, #aext-ws-search, .editor-content, .tiptap';
+      const nodes = document.querySelectorAll('h1, h2, h3, h4, span, p, div, button');
+      let heading = null;
+      for (let i = 0; i < nodes.length; i++) {
+        const el = nodes[i];
+        if (el.closest && el.closest(skipSel)) continue;
+        let text = '';
+        for (let c = el.firstChild; c; c = c.nextSibling) {
+          if (c.nodeType === 3) text += c.nodeValue;
+        }
+        if (/^\s*Workspace\s*$/.test(text)) { heading = el; break; }
+      }
+      if (!heading) return null;
+      const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0) || 1200;
+      const maxW = Math.min(480, vw * 0.42);
+      let n = heading.parentElement;
+      while (n && n !== document.body && n !== document.documentElement) {
+        const tag = (n.tagName || '').toUpperCase();
+        if (tag === 'MAIN' || tag === 'HTML' || tag === 'BODY' || n.id === '__next' || n.id === 'root') break;
+        let r;
+        try { r = n.getBoundingClientRect(); } catch (e) { n = n.parentElement; continue; }
+        if (r.width >= 160 && r.width <= maxW && r.height >= 80) return n;
+        n = n.parentElement;
+      }
+      return null;
+    }
+
+    function isWorkspaceTitle(el) {
+      if (!el || el.id === 'aext-ws-search') return false;
+      let text = '';
+      for (let c = el.firstChild; c; c = c.nextSibling) {
+        if (c.nodeType === 3) text += c.nodeValue;
+      }
+      return /^\s*Workspace\s*$/.test(text);
+    }
+
+    function placeBox(tree) {
+      if (!box || !tree) return;
+      let after = null;
+      const kids = tree.children;
+      for (let i = 0; i < kids.length; i++) {
+        if (kids[i] === box) continue;
+        if (isWorkspaceTitle(kids[i])) { after = kids[i]; break; }
+      }
+      if (after) {
+        if (box.parentElement === tree && box.previousElementSibling === after) return;
+        tree.insertBefore(box, after.nextSibling);
+        return;
+      }
+      if (box.parentElement === tree && tree.firstElementChild === box) return;
+      tree.insertBefore(box, tree.firstChild);
     }
 
     function ensureBox(tree) {
