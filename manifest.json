@@ -1,0 +1,71 @@
+{
+  "manifest_version": 3,
+  "name": "Arena Reimagined",
+  "version": "0.3.23",
+  "description": "Themes, tools, and quality-of-life for arena.ai \u2014 it actually feels like yours. Every feature runs isolated.",
+  "permissions": [
+    "storage",
+    "offscreen"
+  ],
+  "host_permissions": [
+    "https://arena.ai/*",
+    "https://www.arena.ai/*",
+    "https://litterbox.catbox.moe/*",
+    "https://catbox.moe/*",
+    "https://files.catbox.moe/*"
+  ],
+  "background": {
+    "service_worker": "src/background/sw.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://arena.ai/*",
+        "https://www.arena.ai/*"
+      ],
+      "js": [
+        "src/shared/meta.js",
+        "src/content/core/settings.js",
+        "src/content/core/runtime.js",
+        "src/content/themes/palettes.js",
+        "src/content/core/theme.js",
+        "src/content/util/dom.js",
+        "src/content/util/zip.js",
+        "src/content/features/settings-panel.js",
+        "src/content/features/scroll-lock.js",
+        "src/content/features/resume-latest.js",
+        "src/content/features/folder-zip.js",
+        "src/content/features/long-input-txt.js",
+        "src/content/features/finish-notify.js",
+        "src/content/features/follow-ups.js",
+        "src/content/features/pin-chats.js",
+        "src/content/features/reduce-lag.js",
+        "src/content/features/agent-quota.js",
+        "src/content/features/host-upload.js",
+        "src/content/features/workspace-search.js",
+        "src/content/features/novm.js",
+        "src/content/features/hide-email.js",
+        "src/content/content.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": false
+    }
+  ],
+  "action": {
+    "default_popup": "src/popup/popup.html",
+    "default_title": "Arena Reimagined",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "options_page": "src/options/options.html",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

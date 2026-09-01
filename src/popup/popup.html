@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Arena Reimagined</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <header class="head">
+    <div class="brand">
+      <span class="logo">&#x1F3A8;</span>
+      <div>
+        <h1>Arena Reimagined</h1>
+        <p id="version">v0.1.0</p>
+      </div>
+    </div>
+    <span id="health" class="health" title="Feature health"></span>
+  </header>
+
+  <section class="block">
+    <h2>Themes</h2>
+    <div id="theme-grid" class="grid"></div>
+  </section>
+
+  <section class="block">
+    <h2>Features</h2>
+    <div id="feature-list" class="feats"></div>
+  </section>
+
+  <footer>
+    <button id="open-options" class="btn">Open full settings</button>
+    <p class="hint" style="margin:10px 0 0;font-size:11px;opacity:.75;line-height:1.4">Want a feature that isn't here? Contact <b>zecayy</b> on Discord.</p>
+  </footer>
+
+  <script src="../shared/meta.js"></script>
+  <script src="../content/core/settings.js"></script>
+  <script src="../content/themes/palettes.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

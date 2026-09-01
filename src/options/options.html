@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Arena Reimagined — Settings</title>
+  <link rel="stylesheet" href="options.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="hero">
+      <div class="brand">
+        <span class="logo">&#x1F3A8;</span>
+        <div>
+          <h1>Arena Reimagined <span class="pill" id="version">v0.1.0</span></h1>
+          <p id="tagline">Themes, tools &amp; quality-of-life for arena.ai</p>
+        </div>
+      </div>
+      <div class="health" id="health-hero">
+        <span id="health-dot" class="dot"></span>
+        <span id="health-text">checking…</span>
+      </div>
+    </header>
+
+    <section class="card">
+      <h2>Themes</h2>
+      <p class="hint">Applied instantly on every arena.ai page. Switch themes from the gear button in the composer toolbar, or from the popup / this page. Import a theme.json from anywhere — or ask your favourite AI to write one.</p>
+      <div id="theme-grid" class="grid"></div>
+      <div class="theme-actions">
+        <button id="theme-export" class="btn ghost">Export current theme</button>
+        <button id="theme-import" class="btn">Import theme…</button>
+      </div>
+      <div id="theme-import-box" class="import-box">
+        <textarea id="theme-json" placeholder='Paste a theme JSON here, e.g. {"name":"My Theme","mode":"dark","tokens":{…}}'></textarea>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button id="theme-import-do" class="btn">Import &amp; apply</button>
+          <label class="btn ghost" style="display:inline-flex;align-items:center;cursor:pointer">Use a file…<input type="file" id="theme-import-file" accept=".json,application/json" style="display:none"></label>
+        </div>
+        <div id="theme-import-err" class="import-err"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Features</h2>
+      <p class="hint">Every feature runs in isolation. If one crashes, it disables itself and reports here — the rest keep working, and the page is never affected.</p>
+      <div id="feature-list" class="feats"></div>
+    </section>
+
+    <section class="card">
+      <h2>Health &amp; Diagnostics</h2>
+      <p class="hint">Run the offline WCAG scan on this page against any of the bundled fixture themes to reproduce the contrast report (see <code>tools/contrast-scan.js</code>).</p>
+      <button id="run-scan" class="btn ghost" style="margin-bottom:12px">Run demo contrast scan</button>
+      <div id="scan-out" class="scan-out"></div>
+      <div id="health-list" class="health-list"></div>
+      <button id="recheck" class="btn ghost">Re-check features</button>
+    </section>
+
+    <section class="card danger">
+      <h2>Danger zone</h2>
+      <p class="hint">Reset all Arena Reimagined settings back to defaults (theme, toggles, everything).</p>
+      <button id="reset" class="btn danger-btn">Reset all settings</button>
+    </section>
+
+    <footer>
+      <p>Want a feature that isn't here? Contact <b>zecayy</b> on Discord.</p>
+      <p>Arena Reimagined is open source on GitHub — not on the Chrome Web Store. Independent community project, not affiliated with Arena AI. Host-upload is the only thing that leaves your machine (after you accept).</p>
+    </footer>
+  </div>
+
+  <script src="../shared/meta.js"></script>
+  <script src="../content/core/settings.js"></script>
+  <script src="../content/themes/palettes.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>
