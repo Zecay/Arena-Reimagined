@@ -18,8 +18,8 @@ window.__AEXT_FEATURES__['finish-notify'] = {
     let toastEl = null;
     let toastTimer = 0;
 
-    const live = () => !window.AextRuntime || AextRuntime.isEnabled('finish-notify');
-    const optsOf = () => (window.AextSettings && AextSettings.optsOf) ? (AextSettings.optsOf('finish-notify') || {}) : {};
+    const live = () => typeof AextRuntime === 'undefined' || AextRuntime.isEnabled('finish-notify');
+    const optsOf = () => (typeof AextSettings !== 'undefined' && AextSettings.optsOf) ? (AextSettings.optsOf('finish-notify') || {}) : {};
 
     AextDom.addStyle(`
       .aext-notify{position:fixed;right:20px;bottom:20px;z-index:2147483600;max-width:min(320px,calc(100vw - 32px));

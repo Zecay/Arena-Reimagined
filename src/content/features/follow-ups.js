@@ -17,19 +17,19 @@ window.__AEXT_FEATURES__['follow-ups'] = {
       ];
 
     function fuOpts() {
-      return (window.AextSettings && AextSettings.optsOf) ? (AextSettings.optsOf('follow-ups') || {}) : {};
+      return (typeof AextSettings !== 'undefined' && AextSettings.optsOf) ? (AextSettings.optsOf('follow-ups') || {}) : {};
     }
 
     function chips() {
       const o = fuOpts();
-      const list = (o && Array.isArray(o.chips) && o.chips.length) ? o.chips : PROMPTS;
+      const list = (o && Array.isArray(o.chips)) ? o.chips : PROMPTS;
       return list.slice(0, 12).filter((p) => p && (p.label || p.text));
     }
 
     let bar = null;
     let timer = 0;
 
-    const live = () => !window.AextRuntime || AextRuntime.isEnabled('follow-ups');
+    const live = () => typeof AextRuntime === 'undefined' || AextRuntime.isEnabled('follow-ups');
 
     AextDom.addStyle(`
       .aext-followups{display:flex;flex-wrap:wrap;gap:6px;padding:6px 8px 8px;align-items:center;
@@ -196,6 +196,10 @@ window.__AEXT_FEATURES__['follow-ups'] = {
     }
 
     function mount() {
+      if (bar && bar.closest && bar.closest('[role="dialog"], #aext-opt-dlg, #aext-opt-overlay, #arenakit-settings-panel')) {
+        bar.remove();
+        bar = null;
+      }
       const allowEmpty = !!(fuOpts().showWhenEmpty);
       if (!live() || (!allowEmpty && !hasStartedThread())) {
         if (bar && bar.remove) bar.remove();
@@ -203,6 +207,7 @@ window.__AEXT_FEATURES__['follow-ups'] = {
       }
       const editor = AextDom.findPrompt();
       if (!editor) return;
+      if (editor.closest('[role="dialog"], #aext-opt-dlg, #aext-opt-overlay, #arenakit-settings-panel')) return;
       ensureBar();
       const row = toolbarRow(editor);
       if (row && row.parentElement) {
@@ -228,7 +233,7 @@ window.__AEXT_FEATURES__['follow-ups'] = {
     const start = () => {
       if (!document.body) return;
       const go = () => { mount(); AextDom.observeSparse(rescan, 280); };
-      if (window.AextSettings && typeof AextSettings.load === 'function') {
+      if (typeof AextSettings !== 'undefined' && typeof AextSettings.load === 'function') {
         AextSettings.load().then(go).catch(go);
       } else go();
     };
@@ -241,7 +246,7 @@ window.__AEXT_FEATURES__['follow-ups'] = {
     };
 
     let chipSig = '';
-    if (window.AextSettings && typeof AextSettings.subscribe === 'function') {
+    if (typeof AextSettings !== 'undefined' && typeof AextSettings.subscribe === 'function') {
       try {
         AextSettings.subscribe((next) => {
           const fu = (next && next.opts && next.opts['follow-ups']) || {};

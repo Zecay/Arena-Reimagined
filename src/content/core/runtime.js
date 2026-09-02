@@ -159,7 +159,7 @@ const AextRuntime = {
         if (this._enabled[id] !== on) this.setFeatureEnabled(id, on);
       }
     };
-    if (window.AextSettings && typeof AextSettings.subscribe === 'function') {
+    if (typeof AextSettings !== 'undefined' && typeof AextSettings.subscribe === 'function') {
       AextSettings.subscribe((next) => apply((next && next.features) || {}));
     }
     // Backup: some contexts fire storage events without going through subscribe.
@@ -178,3 +178,5 @@ const AextRuntime = {
 
   getStatus() { return this.status; }
 };
+
+try { globalThis.AextRuntime = AextRuntime; } catch (e) { /* ignore */ }

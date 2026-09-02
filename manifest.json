@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Arena Reimagined",
-  "version": "0.3.27",
+  "version": "0.3.32",
   "description": "Themes, tools, and quality-of-life for arena.ai \u2014 it actually feels like yours. Every feature runs isolated.",
   "permissions": [
     "storage",

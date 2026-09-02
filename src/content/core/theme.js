@@ -238,7 +238,7 @@ const AextTheme = {
 
   /* Reject CSS breakout from imported extras (no ; { } @ \\ url()). */
   _cssVal(s, max) {
-    if (window.AextThemeIO && typeof AextThemeIO.safeCss === 'function') {
+    if (typeof AextThemeIO !== 'undefined' && typeof AextThemeIO.safeCss === 'function') {
       return AextThemeIO.safeCss(s, max);
     }
     const t = String(s || '').replace(/[\u0000-\u001f\u007f]/g, '').slice(0, max || 400);
@@ -517,3 +517,5 @@ const AextThemeFeature = {
   label: 'Theme & Colors',
   init: (ctx) => AextTheme.init(ctx)
 };
+
+try { globalThis.AextTheme = AextTheme; } catch (e) { /* ignore */ }

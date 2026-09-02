@@ -11,7 +11,7 @@ window.__AEXT_FEATURES__['agent-quota'] = {
   init(ctx) {
     const STORE = 'arenakit.agentQuota';
     const limitOf = () => {
-      const o = (window.AextSettings && AextSettings.optsOf) ? AextSettings.optsOf('agent-quota') : {};
+      const o = (typeof AextSettings !== 'undefined' && AextSettings.optsOf) ? AextSettings.optsOf('agent-quota') : {};
       const n = parseInt(o.limit, 10);
       return (n >= 1 && n <= 999) ? n : 100;
     };
@@ -21,7 +21,7 @@ window.__AEXT_FEATURES__['agent-quota'] = {
     let lastBump = 0;
     let booted = false;
 
-    const live = () => !window.AextRuntime || AextRuntime.isEnabled('agent-quota');
+    const live = () => typeof AextRuntime === 'undefined' || AextRuntime.isEnabled('agent-quota');
 
     AextDom.addStyle(`
       span.aext-quota{display:inline-flex;align-items:center;flex:none;margin:0 4px 0 0;padding:4px 8px;border-radius:8px;

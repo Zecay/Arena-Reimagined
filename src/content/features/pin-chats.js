@@ -15,7 +15,7 @@ window.__AEXT_FEATURES__['pin-chats'] = {
     let pins = []; // [{id, href, title}]
     let timer = 0;
 
-    const live = () => !window.AextRuntime || AextRuntime.isEnabled('pin-chats');
+    const live = () => typeof AextRuntime === 'undefined' || AextRuntime.isEnabled('pin-chats');
 
     AextDom.addStyle(`
       .aext-pin-badge{display:inline-flex;flex:none;margin-left:4px;color:hsl(var(--interactive-link));opacity:.9;}

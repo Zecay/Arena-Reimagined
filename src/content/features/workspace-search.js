@@ -9,7 +9,7 @@ window.__AEXT_FEATURES__['workspace-search'] = {
   id: 'workspace-search',
   label: 'Workspace file search',
   init(ctx) {
-    const live = () => !window.AextRuntime || AextRuntime.isEnabled('workspace-search');
+    const live = () => typeof AextRuntime === 'undefined' || AextRuntime.isEnabled('workspace-search');
     let box = null;
     let input = null;
     let countEl = null;

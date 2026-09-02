@@ -55,9 +55,14 @@ const AextSettings = {
   _subs: [],
   _watching: false,
   _cache: null,
+  _opts: null,
   _pending: null,
   _dead: false,
   _warnedDead: false,
+
+  _clone(v) {
+    try { return JSON.parse(JSON.stringify(v)); } catch (e) { return v; }
+  },
 
   _alive() {
     if (this._dead) return false;
@@ -112,18 +117,28 @@ const AextSettings = {
 
   async load() {
     this._ensureWatch();
-    if (this._cache) return this._merge(AEXT_DEFAULTS, this._cache);
+    if (this._cache && this._opts) {
+      const out = this._merge(AEXT_DEFAULTS, this._cache);
+      out.opts = this._clone(this._opts);
+      return out;
+    }
     if (this._pending) return this._pending;
     this._pending = this._loadAll().then((merged) => {
+      this._opts = this._clone(merged.opts || AEXT_DEFAULTS.opts);
       this._cache = merged;
       this._pending = null;
-      return this._merge(AEXT_DEFAULTS, merged);
+      const out = this._merge(AEXT_DEFAULTS, merged);
+      out.opts = this._clone(this._opts);
+      return out;
     }).catch((err) => {
       this._pending = null;
       if (this._isDeadErr(err)) this._markDead();
       else console.warn('[ArenaKit] settings load failed', err);
       this._cache = this._cache || {};
-      return this._merge(AEXT_DEFAULTS, this._cache);
+      this._opts = this._opts || this._clone(AEXT_DEFAULTS.opts);
+      const out = this._merge(AEXT_DEFAULTS, this._cache);
+      out.opts = this._clone(this._opts);
+      return out;
     });
     return this._pending;
   },
@@ -144,8 +159,23 @@ const AextSettings = {
       try { await this._areaSet('sync', { [AEXT_STORE_KEY]: slim }); } catch (e) { /* quota leftover */ }
     }
     slim.customThemes = themes;
-    slim.opts = this._merge(AEXT_DEFAULTS.opts, localOpts);
+    slim.opts = this._mergeOpts(AEXT_DEFAULTS.opts, localOpts);
     return slim;
+  },
+
+  _mergeOpts(base, patch) {
+    const out = this._clone(base || {});
+    if (!patch || typeof patch !== 'object' || Array.isArray(patch)) return out;
+    for (const id of Object.keys(patch)) {
+      if (id === '__proto__' || id === 'constructor' || id === 'prototype') continue;
+      const v = patch[id];
+      if (v && typeof v === 'object' && !Array.isArray(v)) {
+        out[id] = Object.assign({}, out[id] || {}, v);
+      } else {
+        out[id] = v;
+      }
+    }
+    return out;
   },
 
   _slim(next) {
@@ -157,14 +187,20 @@ const AextSettings = {
 
   async save(patch) {
     const current = await this.load();
-    const next = this._merge(current, patch);
+    const optPatch = patch && Object.prototype.hasOwnProperty.call(patch, 'opts') ? patch.opts : null;
+    const rest = Object.assign({}, patch || {});
+    delete rest.opts;
+    const next = this._merge(current, rest);
+    next.opts = optPatch
+      ? this._mergeOpts(this._opts || AEXT_DEFAULTS.opts, optPatch)
+      : this._clone(this._opts || current.opts || AEXT_DEFAULTS.opts);
+    this._opts = this._clone(next.opts);
     this._cache = next;
     const wantThemes = Object.prototype.hasOwnProperty.call(patch, 'customThemes');
-    const wantOpts = Object.prototype.hasOwnProperty.call(patch, 'opts');
     try {
       await this._areaSet('sync', { [AEXT_STORE_KEY]: this._slim(next) });
       if (wantThemes) await this._areaSet('local', { [AEXT_THEMES_KEY]: next.customThemes || [] });
-      if (wantOpts) await this._areaSet('local', { [AEXT_OPTS_KEY]: next.opts || {} });
+      await this._areaSet('local', { [AEXT_OPTS_KEY]: next.opts || {} });
     } catch (err) {
       const msg = (err && err.message) || String(err);
       if (/quota/i.test(msg)) {
@@ -180,7 +216,6 @@ const AextSettings = {
         console.warn('[ArenaKit] settings save failed', err);
       }
     }
-    // Always notify subscribers (storage.onChanged is easy to miss).
     this._emit(next);
     return next;
   },
@@ -194,24 +229,31 @@ const AextSettings = {
   },
 
   async setOpts(id, patch) {
-    const s = await this.load();
-    const cur = (s.opts && s.opts[id]) || {};
-    const next = Object.assign({}, s.opts || {}, { [id]: Object.assign({}, cur, patch) });
-    return this.save({ opts: next });
+    await this.load();
+    const cur = Object.assign({}, (this._opts && this._opts[id]) || {});
+    const bag = Object.assign({}, cur, patch || {});
+    if (patch && Object.prototype.hasOwnProperty.call(patch, 'chips')) {
+      bag.chips = Array.isArray(patch.chips) ? patch.chips.slice() : [];
+    }
+    this._opts = Object.assign({}, this._opts || {}, { [id]: bag });
+    return this.save({ opts: this._clone(this._opts) });
   },
 
   optsOf(id) {
-    const s = this._cache || AEXT_DEFAULTS;
-    return (s.opts && s.opts[id]) || (AEXT_DEFAULTS.opts && AEXT_DEFAULTS.opts[id]) || {};
+    const opts = this._opts || (this._cache && this._cache.opts) || AEXT_DEFAULTS.opts || {};
+    const bag = (opts && opts[id]) || (AEXT_DEFAULTS.opts && AEXT_DEFAULTS.opts[id]) || {};
+    return this._clone(bag);
   },
 
   async reset() {
     this._cache = {};
+    this._opts = this._clone(AEXT_DEFAULTS.opts);
     if (this._alive()) {
       try { await chrome.storage.sync.remove(AEXT_STORE_KEY); } catch (e) { /* ignore */ }
       try { await chrome.storage.local.remove([AEXT_THEMES_KEY, AEXT_OPTS_KEY]); } catch (e) { /* ignore */ }
     }
     const next = this._merge(AEXT_DEFAULTS, {});
+    next.opts = this._clone(this._opts);
     this._emit(next);
     return next;
   },
@@ -224,8 +266,10 @@ const AextSettings = {
   },
 
   _emit(next) {
+    if (next && next.opts) this._opts = this._clone(next.opts);
     this._cache = next;
-    const merged = this._merge(AEXT_DEFAULTS, next);
+    const merged = this._merge(AEXT_DEFAULTS, next || {});
+    merged.opts = this._clone(this._opts || merged.opts || AEXT_DEFAULTS.opts);
     for (const fn of this._subs.slice()) {
       try { fn(merged); } catch (e) { console.error('[ArenaKit] settings subscriber failed', e); }
     }
@@ -245,7 +289,7 @@ const AextSettings = {
             const cur = this._cache || {};
             this._emit(Object.assign({}, cur, slim, {
               customThemes: cur.customThemes || [],
-              opts: cur.opts || {}
+              opts: this._clone(this._opts || cur.opts || AEXT_DEFAULTS.opts)
             }));
             return;
           }
@@ -253,7 +297,12 @@ const AextSettings = {
             const cur = this._cache || {};
             const next = Object.assign({}, cur);
             if (changes[AEXT_THEMES_KEY]) next.customThemes = changes[AEXT_THEMES_KEY].newValue || [];
-            if (changes[AEXT_OPTS_KEY]) next.opts = this._merge(AEXT_DEFAULTS.opts, changes[AEXT_OPTS_KEY].newValue || {});
+            if (changes[AEXT_OPTS_KEY]) {
+              next.opts = this._mergeOpts(AEXT_DEFAULTS.opts, changes[AEXT_OPTS_KEY].newValue || {});
+              this._opts = this._clone(next.opts);
+            } else {
+              next.opts = this._clone(this._opts || cur.opts || AEXT_DEFAULTS.opts);
+            }
             this._emit(next);
           }
         } catch (e) {
@@ -286,3 +335,5 @@ const AextSettings = {
     return out;
   }
 };
+
+try { globalThis.AextSettings = AextSettings; } catch (e) { /* ignore */ }

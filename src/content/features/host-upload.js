@@ -19,7 +19,7 @@ window.__AEXT_FEATURES__['host-upload'] = {
     };
     const ARENA_EXT = /\.(png|webp|jpe?g|gif|txt|md|markdown|csv|html?|xml|css|js|mjs|cjs|json|pdf)$/i;
 
-    const live = () => !window.AextRuntime || AextRuntime.isEnabled('host-upload');
+    const live = () => typeof AextRuntime === 'undefined' || AextRuntime.isEnabled('host-upload');
 
     AextDom.addStyle(`
       #aext-host-overlay{position:fixed;inset:0;z-index:2147483646;background:rgba(0,0,0,.62);display:flex;align-items:center;justify-content:center;padding:16px;}

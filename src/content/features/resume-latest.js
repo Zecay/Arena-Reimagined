@@ -10,7 +10,7 @@ window.__AEXT_FEATURES__['resume-latest'] = {
   label: 'Resume at latest message',
   init(ctx) {
     const done = new WeakSet();
-    const live = () => !window.AextRuntime || AextRuntime.isEnabled('resume-latest');
+    const live = () => typeof AextRuntime === 'undefined' || AextRuntime.isEnabled('resume-latest');
     const scrollLatest = () => {
       if (!live()) return;
       const sc = AextDom.findChatScroller();

@@ -28,8 +28,9 @@ const AextDom = {
     if (!n || !n.closest) return false;
     return !!n.closest(
       '#arenakit-settings-panel, #arenakit-settings-overlay, #arenakit-settings-btn,' +
-      '#aext-host-overlay, #aext-zip-progress, #aext-ws-search,' +
-      '.aext-followups, .aext-notify, .aext-quota, .aext-txt-prompt'
+      '#aext-opt-overlay, #aext-opt-dlg, #aext-host-overlay, #aext-host-dlg,' +
+      '#aext-zip-progress, #aext-ws-search,' +
+      '.aext-followups, .aext-notify, .aext-quota, .aext-txt-prompt, button.aext-novm'
     );
   },
 
@@ -141,6 +142,7 @@ const AextDom = {
     for (let i = 0; i < nodes.length; i++) {
       const el = nodes[i];
       if (this.isOurs(el)) continue;
+      if (el.closest && el.closest('[role="dialog"]')) continue;
       try {
         const r = el.getBoundingClientRect();
         if (r.width < 40 || r.height < 4) continue;
@@ -149,11 +151,7 @@ const AextDom = {
       } catch (e) { /* ignore */ }
     }
     if (best) return best;
-    return document.querySelector(
-      '.editor-content [contenteditable="true"],' +
-      '.tiptap.ProseMirror[contenteditable="true"],' +
-      'textarea[placeholder]'
-    ) || null;
+    return null;
   },
 
   /* Best-effort find the "send" button near the prompt. */
@@ -167,3 +165,5 @@ const AextDom = {
     return btns[0] || null;
   }
 };
+
+try { globalThis.AextDom = AextDom; } catch (e) { /* ignore */ }

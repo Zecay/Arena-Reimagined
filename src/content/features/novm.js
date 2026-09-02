@@ -7,7 +7,7 @@ window.__AEXT_FEATURES__.novm = {
   id: 'novm',
   label: 'NoVM desktop',
   init(ctx) {
-    const live = () => !window.AextRuntime || AextRuntime.isEnabled('novm');
+    const live = () => typeof AextRuntime === 'undefined' || AextRuntime.isEnabled('novm');
     let btn = null;
 
     const DOC = 'Use NoVM for a remote Linux desktop. Read this skill, then give me the viewer link so I can connect:\n\nhttps://github.com/vroomjs/NoVM-Agent-Skill/blob/main/skill.md';

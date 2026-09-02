@@ -10,8 +10,8 @@ window.__AEXT_FEATURES__['hide-email'] = {
   label: 'Hide account email',
   init(ctx) {
     const EMAIL = /^[^\s@]{1,80}@[^\s@]{1,120}\.[A-Za-z]{2,24}$/;
-    const live = () => !window.AextRuntime || AextRuntime.isEnabled('hide-email');
-    const optsOf = () => (window.AextSettings && AextSettings.optsOf) ? (AextSettings.optsOf('hide-email') || {}) : {};
+    const live = () => typeof AextRuntime === 'undefined' || AextRuntime.isEnabled('hide-email');
+    const optsOf = () => (typeof AextSettings !== 'undefined' && AextSettings.optsOf) ? (AextSettings.optsOf('hide-email') || {}) : {};
     const DOTS = '••••••••••';
 
     function coverText() {
@@ -67,7 +67,7 @@ window.__AEXT_FEATURES__['hide-email'] = {
     AextDom.observeSparse(apply, 700);
     if (document.body) AextDom.later(apply, 600);
     else document.addEventListener('DOMContentLoaded', () => AextDom.later(apply, 600), { once: true });
-    if (window.AextSettings && typeof AextSettings.subscribe === 'function') {
+    if (typeof AextSettings !== 'undefined' && typeof AextSettings.subscribe === 'function') {
       AextSettings.subscribe(() => apply());
     }
 

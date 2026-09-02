@@ -13,7 +13,7 @@ window.__AEXT_FEATURES__['long-input-txt'] = {
   label: 'Long input → .txt (opt-in)',
   init(ctx) {
     const limitOf = () => {
-      const o = (window.AextSettings && AextSettings.optsOf) ? AextSettings.optsOf('long-input-txt') : {};
+      const o = (typeof AextSettings !== 'undefined' && AextSettings.optsOf) ? AextSettings.optsOf('long-input-txt') : {};
       const n = parseInt(o.limit, 10);
       return (n >= 500 && n <= 20000) ? n : 3000;
     };
@@ -23,7 +23,7 @@ window.__AEXT_FEATURES__['long-input-txt'] = {
     let handledFor = null;
     let checkTimer = 0;
 
-    const live = () => !window.AextRuntime || AextRuntime.isEnabled('long-input-txt');
+    const live = () => typeof AextRuntime === 'undefined' || AextRuntime.isEnabled('long-input-txt');
     const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
     function findEditor() {

@@ -604,3 +604,9 @@ const AextThemeIO = {
     return theme;
   }
 };
+
+try {
+  globalThis.AextThemeIO = AextThemeIO;
+  globalThis.AextThemes = AextThemes;
+  globalThis.AextGetAllThemes = AextGetAllThemes;
+} catch (e) { /* ignore */ }

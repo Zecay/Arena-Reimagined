@@ -191,12 +191,12 @@ window.__AEXT_FEATURES__['settings-panel'] = {
         let n = prompt;
         for (let i = 0; i < 10 && n; i++, n = n.parentElement) {
           if (!n.querySelectorAll) continue;
-          const found = Array.from(n.querySelectorAll(ANCHORS)).filter((b) => !AextDom.isOurs(b) && vis(b));
+          const found = Array.from(n.querySelectorAll(ANCHORS)).filter((b) => !AextDom.isOurs(b) && vis(b) && !b.closest('[role="dialog"]'));
           if (found.length) { cands = found; break; }
         }
       }
       if (!cands.length) {
-        cands = Array.from(document.querySelectorAll(ANCHORS)).filter((b) => !AextDom.isOurs(b) && vis(b));
+        cands = Array.from(document.querySelectorAll(ANCHORS)).filter((b) => !AextDom.isOurs(b) && vis(b) && !b.closest('[role="dialog"]'));
       }
       let best = null;
       let bestRank = -1;
@@ -220,13 +220,20 @@ window.__AEXT_FEATURES__['settings-panel'] = {
       if (AextDom.pageHidden()) return;
       const t = findToolbar();
       let btn = document.getElementById(BTN_ID);
-      if (t && t.group && t.group.isConnected) {
+      const stuck = btn && btn.closest('[role="dialog"]') && !btn.closest('#arenakit-settings-panel, #aext-opt-dlg');
+      if (stuck && t && t.group && t.group.isConnected && !t.group.closest('[role="dialog"]')) {
+        try { t.group.insertBefore(btn, t.group.firstChild); } catch (e) { /* ignore */ }
+        btn.classList.remove('aext-fallback');
+        btnEl = btn;
+        return;
+      }
+      if (t && t.group && t.group.isConnected && !t.group.closest('[role="dialog"]')) {
         if (btn && t.group.contains(btn) && vis(btn)) {
           btn.classList.remove('aext-fallback');
           btnEl = btn;
           return;
         }
-      } else if (btn && btn.parentElement && !btn.classList.contains('aext-fallback') && vis(btn)) {
+      } else if (btn && btn.parentElement && !btn.classList.contains('aext-fallback') && vis(btn) && !stuck) {
         btnEl = btn;
         return;
       }
@@ -275,6 +282,13 @@ window.__AEXT_FEATURES__['settings-panel'] = {
       #aext-opt-dlg textarea{min-height:52px;resize:vertical;}
       #aext-opt-dlg label{display:flex;align-items:center;gap:8px;margin:8px 0;font-size:12.5px;}
       #aext-opt-dlg .aext-opt-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;}
+      #aext-opt-dlg button.aext-sp-btn{padding:8px 10px!important;border-radius:9px!important;border:1px solid hsl(var(--border-medium))!important;
+        background:hsl(var(--surface-raised-alt))!important;color:hsl(var(--text-primary))!important;font-size:12px!important;font-weight:600!important;
+        cursor:pointer!important;pointer-events:auto!important;opacity:1!important;visibility:visible!important;appearance:none!important;}
+      #aext-opt-dlg .aext-opt-actions button.aext-sp-btn{flex:1;}
+      #aext-opt-dlg .aext-opt-row button.aext-opt-x{flex:none!important;width:32px!important;min-width:32px!important;height:32px!important;
+        padding:0!important;align-self:flex-start;line-height:1!important;}
+      #aext-opt-dlg button.aext-sp-btn.primary{background:hsl(var(--interactive-cta))!important;color:hsl(var(--interactive-on-cta))!important;border-color:transparent!important;}
       #aext-theme-docs{margin-top:10px;display:none;}
       #aext-theme-docs.open{display:block;}
       #aext-theme-docs pre{max-height:240px;overflow:auto;padding:10px;border-radius:10px;background:hsl(var(--surface-tertiary));
@@ -297,7 +311,7 @@ window.__AEXT_FEATURES__['settings-panel'] = {
       'hide-email': 1
     };
 
-    function openFeatureOpts(feat) {
+    async function openFeatureOpts(feat) {
       const old = document.getElementById('aext-opt-overlay');
       if (old) old.remove();
       const overlay = document.createElement('div');
@@ -307,7 +321,16 @@ window.__AEXT_FEATURES__['settings-panel'] = {
       const h = document.createElement('h3');
       h.textContent = feat.name + ' settings';
       dlg.appendChild(h);
-      const opts = (AextSettings.optsOf && AextSettings.optsOf(feat.id)) || {};
+      let opts = {};
+      try {
+        if (AextSettings.load) await AextSettings.load();
+        opts = (AextSettings.optsOf && AextSettings.optsOf(feat.id)) || {};
+        const raw = await chrome.storage.local.get('arenakit.opts');
+        const stored = raw && raw['arenakit.opts'] && raw['arenakit.opts'][feat.id];
+        if (stored && typeof stored === 'object') opts = Object.assign({}, opts, stored);
+      } catch (e) {
+        opts = (AextSettings.optsOf && AextSettings.optsOf(feat.id)) || {};
+      }
       const saveBtn = document.createElement('button');
       saveBtn.type = 'button'; saveBtn.className = 'aext-sp-btn primary'; saveBtn.textContent = 'Save';
       const cancel = document.createElement('button');
@@ -321,7 +344,10 @@ window.__AEXT_FEATURES__['settings-panel'] = {
         hint.textContent = 'Your chips (up to 12). Label is the button; text is what gets sent.';
         dlg.appendChild(hint);
         const list = document.createElement('div');
-        const chips = (opts.chips && opts.chips.length ? opts.chips : (typeof AEXT_FOLLOWUP_DEFAULTS !== 'undefined' ? AEXT_FOLLOWUP_DEFAULTS : [])).slice();
+        const rawChips = (opts.chips && Array.isArray(opts.chips) && opts.chips.length)
+          ? opts.chips
+          : (typeof AEXT_FOLLOWUP_DEFAULTS !== 'undefined' ? AEXT_FOLLOWUP_DEFAULTS : []);
+        const chips = JSON.parse(JSON.stringify(rawChips));
         const draw = () => {
           list.innerHTML = '';
           chips.forEach((c, i) => {
@@ -331,7 +357,8 @@ window.__AEXT_FEATURES__['settings-panel'] = {
             lab.addEventListener('input', () => { chips[i].label = lab.value; });
             const tx = document.createElement('textarea'); tx.placeholder = 'Prompt to send'; tx.value = c.text || '';
             tx.addEventListener('input', () => { chips[i].text = tx.value; });
-            const rm = document.createElement('button'); rm.type = 'button'; rm.className = 'aext-sp-btn'; rm.textContent = '✕';
+            const rm = document.createElement('button'); rm.type = 'button'; rm.className = 'aext-sp-btn aext-opt-x'; rm.textContent = '✕';
+            rm.setAttribute('aria-label', 'Remove chip');
             rm.addEventListener('click', () => { chips.splice(i, 1); draw(); });
             const col = document.createElement('div'); col.style.flex = '1'; col.appendChild(lab); col.appendChild(tx);
             row.appendChild(col); row.appendChild(rm); list.appendChild(row);
@@ -349,11 +376,17 @@ window.__AEXT_FEATURES__['settings-panel'] = {
         alwaysLab.appendChild(document.createTextNode(' Show chips even when the chat has not started yet'));
         dlg.appendChild(alwaysLab);
         saveBtn.addEventListener('click', async () => {
-          await AextSettings.setOpts('follow-ups', {
-            chips: chips.filter((c) => (c.label || c.text)),
-            showWhenEmpty: !!always.checked
-          });
-          overlay.remove();
+          saveBtn.disabled = true;
+          try {
+            await AextSettings.setOpts('follow-ups', {
+              chips: chips.filter((c) => (c.label || c.text)),
+              showWhenEmpty: !!always.checked
+            });
+            overlay.remove();
+          } catch (e) {
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Save failed';
+          }
         });
       } else if (feat.id === 'finish-notify') {
         function mkCheck(key, label, defOn) {
@@ -410,8 +443,14 @@ window.__AEXT_FEATURES__['settings-panel'] = {
         inp.maxLength = 80;
         dlg.appendChild(inp);
         saveBtn.addEventListener('click', async () => {
-          await AextSettings.setOpts('hide-email', { text: String(inp.value || '').trim().slice(0, 80) });
-          overlay.remove();
+          saveBtn.disabled = true;
+          try {
+            await AextSettings.setOpts('hide-email', { text: String(inp.value || '').trim().slice(0, 80) });
+            overlay.remove();
+          } catch (e) {
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Save failed';
+          }
         });
       }
       const actions = document.createElement('div');
@@ -425,7 +464,7 @@ window.__AEXT_FEATURES__['settings-panel'] = {
     async function openPanel() {
       if (document.getElementById('arenakit-settings-overlay')) return;
       const settings = await AextSettings.load();
-      const status = (window.AextRuntime && AextRuntime.getStatus()) || {};
+      const status = (typeof AextRuntime !== 'undefined' && AextRuntime.getStatus()) || {};
 
       const overlay = document.createElement('div');
       overlay.id = 'arenakit-settings-overlay';
@@ -661,7 +700,7 @@ window.__AEXT_FEATURES__['settings-panel'] = {
           const st = status[f.id];
           if (st && st.ok === false) { sw.disabled = true; row.style.opacity = '.55'; }
           sw.addEventListener('change', async () => {
-            if (window.AextRuntime && typeof AextRuntime.setFeatureEnabled === 'function') {
+            if (typeof AextRuntime !== 'undefined' && typeof AextRuntime.setFeatureEnabled === 'function') {
               await AextRuntime.setFeatureEnabled(f.id, sw.checked);
             }
             await AextSettings.setFeature(f.id, sw.checked);

@@ -23,7 +23,7 @@ window.__AEXT_FEATURES__['reduce-lag'] = {
       }
     `, 'arenakit-reduce-lag-css');
 
-    const live = () => !window.AextRuntime || AextRuntime.isEnabled('reduce-lag');
+    const live = () => typeof AextRuntime === 'undefined' || AextRuntime.isEnabled('reduce-lag');
     const apply = () => {
       try {
         document.documentElement.classList.toggle('aext-reduce-lag', live());

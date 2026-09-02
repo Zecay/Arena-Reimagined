@@ -16,7 +16,7 @@
     init: (ctx) => AextTheme.init(ctx)
   });
 
-  // 2) every isolated feature module
+  // 2) every isolated feature module (scroll-lock, copy-code, folder-zip, ...)
   const modules = window.__AEXT_FEATURES__ || {};
   for (const [id, feat] of Object.entries(modules)) {
     if (feat && typeof feat.init === 'function') {
