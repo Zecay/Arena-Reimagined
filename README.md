@@ -6,11 +6,24 @@ Not affiliated with Arena AI. Not on the Chrome Web Store — load it unpacked f
 
 ## Install
 
+One folder. Chrome, Edge, Brave, Firefox, and Zen all load the same files — there is no second zip.
+
+**Chrome / Edge / Brave**
+
 1. Clone or download this folder.
 2. Open `chrome://extensions` (Edge: `edge://extensions`).
 3. Turn on **Developer mode**.
 4. **Load unpacked** and pick this folder.
 5. Open [arena.ai](https://arena.ai) → click the crest button in the composer.
+
+**Firefox / Zen**
+
+1. Same folder as above.
+2. Open `about:debugging#/runtime/this-firefox` (Zen: `about:debugging#/runtime/this-zen` if that exists, otherwise the same `this-firefox` page).
+3. **Load Temporary Add-on…** and pick `manifest.json` in this folder.
+4. Open [arena.ai](https://arena.ai).
+
+Temporary add-ons drop on browser restart — load it again. Firefox release does **not** do Chrome-style permanent unpacked installs. A signed listing on addons.mozilla.org would, if we ever publish one.
 
 Reload the extension, then refresh arena.ai, after you pull updates.
 

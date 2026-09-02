@@ -45,7 +45,56 @@ async function upload(host, msg) {
   );
 }
 
+function playChime(ac) {
+  const t0 = ac.currentTime;
+  const master = ac.createGain();
+  master.gain.value = 1;
+  master.connect(ac.destination);
+  function note(freq, start, dur, peak, type) {
+    const osc = ac.createOscillator();
+    const g = ac.createGain();
+    const f = ac.createBiquadFilter();
+    osc.type = type || 'sine';
+    osc.frequency.setValueAtTime(freq, t0 + start);
+    f.type = 'lowpass';
+    f.frequency.setValueAtTime(4200, t0 + start);
+    g.gain.setValueAtTime(0.0001, t0 + start);
+    g.gain.exponentialRampToValueAtTime(peak, t0 + start + 0.02);
+    g.gain.exponentialRampToValueAtTime(peak * 0.55, t0 + start + dur * 0.5);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + start + dur);
+    osc.connect(f);
+    f.connect(g);
+    g.connect(master);
+    osc.start(t0 + start);
+    osc.stop(t0 + start + dur + 0.06);
+  }
+  note(784.0, 0.00, 0.42, 0.78, 'sine');
+  note(784.0, 0.00, 0.42, 0.28, 'triangle');
+  note(1046.5, 0.34, 0.48, 0.85, 'sine');
+  note(1318.5, 0.70, 0.55, 0.90, 'sine');
+  note(2637.0, 0.70, 0.40, 0.22, 'sine');
+}
+
+/* Firefox/Zen event pages have a window + AudioContext. Chrome service
+   workers do not — they go through the offscreen document. */
+function playHere() {
+  try {
+    const Win = typeof window !== 'undefined' ? window : null;
+    const AC = (Win && (Win.AudioContext || Win.webkitAudioContext)) ||
+      (typeof AudioContext !== 'undefined' && AudioContext) ||
+      (typeof webkitAudioContext !== 'undefined' && webkitAudioContext);
+    if (!AC) return false;
+    const c = playHere._ac || (playHere._ac = new AC());
+    const go = () => { try { playChime(c); } catch (e) { /* ignore */ } };
+    if (c.state === 'suspended') c.resume().then(go).catch(go);
+    else go();
+    return true;
+  } catch (e) { return false; }
+}
+
 async function ding() {
+  if (playHere()) return;
+  if (!chrome.offscreen) return;
   let created = false;
   try {
     const has = chrome.offscreen && (await chrome.offscreen.hasDocument());
